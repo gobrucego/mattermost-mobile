@@ -292,6 +292,7 @@ function IntegrationSelector(
     }, [getChannels, dataSource]);
 
     const searchDynamicOptions = useCallback(async (searchTerm = '') => {
+
         if (filteredOptions && filteredOptions !== integrationData && !searchTerm) {
             setIntegrationData(filteredOptions);
         }
@@ -301,6 +302,7 @@ function IntegrationSelector(
         }
 
         const results: DialogOption[] = await getDynamicOptions(searchTerm.toLowerCase());
+
         const searchData = results || [];
 
         if (searchTerm) {
