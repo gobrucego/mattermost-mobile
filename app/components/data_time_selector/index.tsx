@@ -13,7 +13,7 @@ import {Preferences} from '@constants';
 import {CUSTOM_STATUS_TIME_PICKER_INTERVALS_IN_MINUTES} from '@constants/custom_status';
 import {getDisplayNamePreferenceAsBool} from '@helpers/api/preference';
 import {queryDisplayNamePreferences} from '@queries/servers/preference';
-import {getCurrentMomentForTimezone, getRoundedTime, getUtcOffsetForTimeZone} from '@utils/helpers';
+import {getCurrentMomentForTimezone, getRoundedTime} from '@utils/helpers';
 import {makeStyleSheetFromTheme} from '@utils/theme';
 
 import type {WithDatabaseArgs} from '@typings/database/database';
@@ -25,6 +25,7 @@ type Props = {
     handleChange: (currentDate: Moment) => void;
     showInitially?: AndroidMode;
     initialDate?: Moment;
+    dateOnly?: boolean;
 }
 
 type AndroidMode = 'date' | 'time';
@@ -44,10 +45,9 @@ const getStyleSheet = makeStyleSheetFromTheme((theme: Theme) => {
     };
 });
 
-const DateTimeSelector = ({timezone, handleChange, isMilitaryTime, theme, showInitially, initialDate}: Props) => {
+const DateTimeSelector = ({timezone, handleChange, isMilitaryTime, theme, showInitially, initialDate, dateOnly = false}: Props) => {
     const styles = getStyleSheet(theme);
     const currentTime = getCurrentMomentForTimezone(timezone);
-    const timezoneOffSetInMinutes = timezone ? getUtcOffsetForTimeZone(timezone) : undefined;
     const minimumDate = getRoundedTime(currentTime);
 
     const defaultDate = initialDate && initialDate.isAfter(minimumDate) ? initialDate : minimumDate;
@@ -70,13 +70,23 @@ const DateTimeSelector = ({timezone, handleChange, isMilitaryTime, theme, showIn
     };
 
     const showDatepicker = () => {
-        showMode('date');
-        handleChange(moment(date));
+        if (show && mode === 'date') {
+            // Toggle off if already showing date picker
+            setShow(false);
+        } else {
+            // Show date picker
+            showMode('date');
+        }
     };
 
     const showTimepicker = () => {
-        showMode('time');
-        handleChange(moment(date));
+        if (show && mode === 'time') {
+            // Toggle off if already showing time picker
+            setShow(false);
+        } else {
+            // Show time picker
+            showMode('time');
+        }
     };
 
     return (
@@ -91,12 +101,14 @@ const DateTimeSelector = ({timezone, handleChange, isMilitaryTime, theme, showIn
                     title='Select Date'
                     color={theme.buttonBg}
                 />
-                <Button
-                    testID={'custom_status_clear_after.menu_item.date_and_time.button.time'}
-                    onPress={showTimepicker}
-                    title='Select Time'
-                    color={theme.buttonBg}
-                />
+                {!dateOnly && (
+                    <Button
+                        testID={'custom_status_clear_after.menu_item.date_and_time.button.time'}
+                        onPress={showTimepicker}
+                        title='Select Time'
+                        color={theme.buttonBg}
+                    />
+                )}
             </View>
             {show && (
                 <DateTimePicker
@@ -109,7 +121,7 @@ const DateTimeSelector = ({timezone, handleChange, isMilitaryTime, theme, showIn
                     textColor={theme.centerChannelColor}
                     minimumDate={minimumDate.toDate()}
                     minuteInterval={CUSTOM_STATUS_TIME_PICKER_INTERVALS_IN_MINUTES}
-                    timeZoneOffsetInMinutes={timezoneOffSetInMinutes}
+                    timeZoneName={timezone || undefined}
                 />
             )}
         </View>
