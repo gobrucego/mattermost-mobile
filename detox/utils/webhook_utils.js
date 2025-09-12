@@ -363,10 +363,146 @@ function getTextFieldsDialog(triggerId, webhookBaseUrl) {
     };
 }
 
+function getMultiselectDynamicDialog(triggerId, webhookBaseUrl) {
+    return {
+        trigger_id: triggerId,
+        url: `${webhookBaseUrl}/dialog_submit`,
+        dialog: {
+            callback_id: 'multiselect_dynamic_callback',
+            title: 'Multiselect & Dynamic Dialog Test',
+            icon_url: 'http://www.mattermost.org/wp-content/uploads/2016/04/icon.png',
+            introduction_text: 'This dialog tests multiselect and dynamic select functionality',
+            submit_label: 'Submit Test',
+            notify_on_cancel: true,
+            state: 'multiselect_dynamic_state',
+            elements: [
+                {
+                    display_name: 'Select Multiple Users',
+                    name: 'multiselect_users',
+                    type: 'select',
+                    data_source: 'users',
+                    placeholder: 'Choose multiple users',
+                    help_text: 'You can select multiple users from the list',
+                    optional: false,
+                    multiselect: true,
+                },
+                {
+                    display_name: 'Select Multiple Channels',
+                    name: 'multiselect_channels',
+                    type: 'select',
+                    data_source: 'channels',
+                    placeholder: 'Choose multiple channels',
+                    help_text: 'You can select multiple channels from the list',
+                    optional: true,
+                    multiselect: true,
+                },
+                {
+                    display_name: 'Dynamic Options',
+                    name: 'dynamic_select',
+                    type: 'select',
+                    data_source: 'dynamic',
+                    data_source_url: `${webhookBaseUrl}/dynamic_options`,
+                    placeholder: 'Type to load options dynamically',
+                    help_text: 'Options are loaded dynamically from an external API',
+                    optional: false,
+                },
+                {
+                    display_name: 'Dynamic Multiselect Options',
+                    name: 'dynamic_multiselect',
+                    type: 'select',
+                    data_source: 'dynamic',
+                    data_source_url: `${webhookBaseUrl}/dynamic_multiselect_options`,
+                    placeholder: 'Select multiple dynamic options',
+                    help_text: 'Multiselect with dynamically loaded options',
+                    optional: true,
+                    multiselect: true,
+                },
+                {
+                    display_name: 'Static Multiselect',
+                    name: 'static_multiselect',
+                    type: 'select',
+                    placeholder: 'Choose multiple static options',
+                    help_text: 'Static options with multiselect enabled',
+                    optional: true,
+                    multiselect: true,
+                    options: [
+                        {text: 'Option Alpha', value: 'alpha'},
+                        {text: 'Option Beta', value: 'beta'},
+                        {text: 'Option Gamma', value: 'gamma'},
+                        {text: 'Option Delta', value: 'delta'},
+                        {text: 'Option Epsilon', value: 'epsilon'},
+                    ],
+                },
+            ],
+        },
+    };
+}
+
+function getDynamicOptionsResponse(searchText = '') {
+    // Simulate dynamic option loading based on query
+    const baseOptions = [
+        {text: 'Project Alpha', value: 'project_alpha'},
+        {text: 'Project Beta', value: 'project_beta'},
+        {text: 'Project Gamma', value: 'project_gamma'},
+        {text: 'Task Management', value: 'task_mgmt'},
+        {text: 'User Research', value: 'user_research'},
+        {text: 'Development', value: 'development'},
+        {text: 'Quality Assurance', value: 'qa'},
+        {text: 'Documentation', value: 'documentation'},
+        {text: 'Marketing Campaign', value: 'marketing'},
+        {text: 'Sales Pipeline', value: 'sales'},
+    ];
+
+    // Filter options based on search text
+    const filteredOptions = searchText ?
+        baseOptions.filter((option) =>
+            option.text.toLowerCase().includes(searchText) ||
+            option.value.toLowerCase().includes(searchText)) :
+        baseOptions.slice(0, 6); // Limit to first 6 if no search
+
+    return {
+        items: filteredOptions,
+    };
+}
+
+function getDynamicMultiselectOptionsResponse(query = '') {
+    // Dynamic options for multiselect field
+    const baseOptions = [
+        {text: 'Team Lead', value: 'team_lead'},
+        {text: 'Developer', value: 'developer'},
+        {text: 'Designer', value: 'designer'},
+        {text: 'Product Manager', value: 'product_manager'},
+        {text: 'QA Engineer', value: 'qa_engineer'},
+        {text: 'DevOps Engineer', value: 'devops'},
+        {text: 'Business Analyst', value: 'business_analyst'},
+        {text: 'Scrum Master', value: 'scrum_master'},
+        {text: 'Technical Writer', value: 'tech_writer'},
+        {text: 'Data Analyst', value: 'data_analyst'},
+    ];
+
+    if (!query) {
+        return {
+            options: baseOptions.slice(0, 6),
+        };
+    }
+
+    const filtered = baseOptions.filter((option) =>
+        option.text.toLowerCase().includes(query.toLowerCase()) ||
+        option.value.toLowerCase().includes(query.toLowerCase()),
+    );
+
+    return {
+        options: filtered,
+    };
+}
+
 module.exports = {
     getFullDialog,
     getSimpleDialog,
     getUserAndChannelDialog,
     getBooleanDialog,
     getTextFieldsDialog,
+    getMultiselectDynamicDialog,
+    getDynamicOptionsResponse,
+    getDynamicMultiselectOptionsResponse,
 };

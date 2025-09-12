@@ -104,28 +104,20 @@ describe('Interactive Dialog - Select Fields', () => {
         // Use wildcard patterns to find any visible user
         let userSelected = false;
         const userTestIdPatterns = [
-            'integration_selector.user_list.user_item',
-            'integration_selector.user_list',
+            /^integration_selector\.user_list\.user_item\.[a-zA-Z0-9]+\.[a-zA-Z0-9]+$/,
+            /^integration_selector\.user_list\.user_item\.[a-zA-Z0-9]+$/,
+            /integration_selector.*user_item.*[a-zA-Z0-9]{10,}/,
         ];
 
-        // Try each pattern sequentially without loops
-        if (userTestIdPatterns[0]) {
+        for (const pattern of userTestIdPatterns) {
             try {
-                const firstUserElement = element(by.id(userTestIdPatterns[0]));
+                const firstUserElement = element(by.id(pattern)).atIndex(0);
                 await expect(firstUserElement).toExist();
                 await firstUserElement.tap();
                 userSelected = true;
-            } catch (error1) {
-                if (userTestIdPatterns[1]) {
-                    try {
-                        const secondUserElement = element(by.id(userTestIdPatterns[1]));
-                        await expect(secondUserElement).toExist();
-                        await secondUserElement.tap();
-                        userSelected = true;
-                    } catch (error2) {
-                        // Will try fallback below
-                    }
-                }
+                break;
+            } catch (wildcardError) {
+                // Continue to next pattern
             }
         }
 
