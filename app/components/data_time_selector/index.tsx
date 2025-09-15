@@ -26,6 +26,7 @@ type Props = {
     showInitially?: AndroidMode;
     initialDate?: Moment;
     dateOnly?: boolean;
+    testID?: string;
 }
 
 type AndroidMode = 'date' | 'time';
@@ -45,7 +46,7 @@ const getStyleSheet = makeStyleSheetFromTheme((theme: Theme) => {
     };
 });
 
-const DateTimeSelector = ({timezone, handleChange, isMilitaryTime, theme, showInitially, initialDate, dateOnly = false}: Props) => {
+const DateTimeSelector = ({timezone, handleChange, isMilitaryTime, theme, showInitially, initialDate, dateOnly = false, testID}: Props) => {
     const styles = getStyleSheet(theme);
     const currentTime = getCurrentMomentForTimezone(timezone);
     const minimumDate = getRoundedTime(currentTime);
@@ -92,18 +93,18 @@ const DateTimeSelector = ({timezone, handleChange, isMilitaryTime, theme, showIn
     return (
         <View
             style={styles.container}
-            testID='custom_date_time_picker'
+            testID={testID || 'custom_date_time_picker'}
         >
             <View style={styles.buttonContainer}>
                 <Button
-                    testID={'custom_status_clear_after.menu_item.date_and_time.button.date'}
+                    testID={testID ? `${testID}.select.button` : 'custom_status_clear_after.menu_item.date_and_time.button.date'}
                     onPress={showDatepicker}
                     title='Select Date'
                     color={theme.buttonBg}
                 />
                 {!dateOnly && (
                     <Button
-                        testID={'custom_status_clear_after.menu_item.date_and_time.button.time'}
+                        testID={testID ? `${testID}.time.button` : 'custom_status_clear_after.menu_item.date_and_time.button.time'}
                         onPress={showTimepicker}
                         title='Select Time'
                         color={theme.buttonBg}

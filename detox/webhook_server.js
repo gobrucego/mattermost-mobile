@@ -59,6 +59,7 @@ server.post('/boolean_dialog_request', onBooleanDialogRequest);
 server.post('/simple_dialog_error_request', onSimpleDialogErrorRequest);
 server.post('/select_fields_dialog_request', onSelectFieldsDialogRequest);
 server.post('/multiselect_dynamic_dialog_request', onMultiselectDynamicDialogRequest);
+server.post('/date_datetime_dialog_request', onDateTimeDialogRequest);
 server.post('/dynamic_options', getDynamicOptions);
 server.post('/dynamic_multiselect_options', getDynamicMultiselectOptions);
 server.post('/slack_compatible_message_response', postSlackCompatibleMessageResponse);
@@ -460,6 +461,24 @@ function onDialogSubmit(req, res) {
 - someoptionselector: ${selectValues.someoptionselector}
 - someuserselector: ${selectValues.someuserselector}
 - somechannelselector: ${selectValues.somechannelselector}`;
+        } else if (body.callback_id === 'datetimecallbackid') {
+            const dateTimeValues = {
+                required_date: submission.required_date,
+                optional_date: submission.optional_date,
+                required_datetime: submission.required_datetime,
+                optional_datetime: submission.optional_datetime,
+                meeting_date: submission.meeting_date,
+                deadline_datetime: submission.deadline_datetime,
+            };
+            console.log('📝 Date/DateTime dialog submission:', dateTimeValues);
+            // Post structured submission results to channel for e2e verification
+            message = `Date/DateTime Dialog Submitted:
+- required_date: ${dateTimeValues.required_date}
+- optional_date: ${dateTimeValues.optional_date}
+- required_datetime: ${dateTimeValues.required_datetime}
+- optional_datetime: ${dateTimeValues.optional_datetime}
+- meeting_date: ${dateTimeValues.meeting_date}
+- deadline_datetime: ${dateTimeValues.deadline_datetime}`;
         } else {
             message = `Dialog submitted with values: ${JSON.stringify(submission)}`;
         }
@@ -574,6 +593,17 @@ function onMultiselectDynamicDialogRequest(req, res) {
     res.setHeader('Content-Type', 'application/json');
     console.log('=== END MULTISELECT DYNAMIC DIALOG REQUEST ===');
     return res.json({text: 'Multiselect dynamic dialog triggered via slash command!'});
+}
+
+function onDateTimeDialogRequest(req, res) {
+    const {body} = req;
+    if (body.trigger_id) {
+        const webhookBaseUrl = getWebhookBaseUrl();
+        const dialog = webhookUtils.getDateTimeDialog(body.trigger_id, webhookBaseUrl);
+        openDialog(dialog);
+    }
+    res.setHeader('Content-Type', 'application/json');
+    return res.json({text: 'Date/DateTime dialog triggered via slash command!'});
 }
 
 function getDynamicOptions(req, res) {
