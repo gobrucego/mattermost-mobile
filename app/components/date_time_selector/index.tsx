@@ -53,7 +53,7 @@ const DateTimeSelector = ({
     theme,
     showInitially,
     initialDate,
-    dateOnly = false, 
+    dateOnly = false,
     testID,
     minuteInterval = 30,
 }: Props) => {
