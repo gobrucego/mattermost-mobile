@@ -22,16 +22,9 @@ const server = express();
 server.use(express.json());
 server.use(express.urlencoded({extended: true}));
 
-// Log all incoming requests
+// Log all incoming requests (minimal for test performance)
 server.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    console.log('Headers:', req.headers);
-    if (req.query && Object.keys(req.query).length > 0) {
-        console.log('Query params:', req.query);
-    }
-    if (req.body && Object.keys(req.body).length > 0) {
-        console.log('Request body:', req.body);
-    }
+    console.log(`[${req.method}] ${req.url}`);
     next();
 });
 
@@ -61,6 +54,10 @@ server.post('/select_fields_dialog_request', onSelectFieldsDialogRequest);
 server.post('/multiselect_dynamic_dialog_request', onMultiselectDynamicDialogRequest);
 server.post('/dynamic_options', getDynamicOptions);
 server.post('/dynamic_multiselect_options', getDynamicMultiselectOptions);
+server.post('/multiform_dialog_request', onMultiformDialogRequest);
+server.post('/multiform_dialog_submit', onMultiformDialogSubmit);
+server.post('/field_refresh_dialog_request', onFieldRefreshDialogRequest);
+server.post('/field_refresh_dialog_submit', onFieldRefreshDialogSubmit);
 server.post('/slack_compatible_message_response', postSlackCompatibleMessageResponse);
 server.post('/send_message_to_channel', postSendMessageToChannel);
 server.post('/post_outgoing_webhook', postOutgoingWebhook);
@@ -376,9 +373,7 @@ function onSelectFieldsDialogRequest(req, res) {
 }
 
 function onDialogSubmitError(req, res) {
-    const {body} = req;
-
-    console.log('💥 Dialog error endpoint called:', body);
+    console.log('[POST] /dialog_error');
 
     // Return error response that should keep dialog open and show error
     res.status(400).json({
@@ -402,10 +397,7 @@ function onDialogSubmit(req, res) {
         const submission = body.submission || {};
 
         // Debug logging for dialog submissions (can be removed in production)
-        console.log('📋 Dialog submission received:', {
-            callback_id: body.callback_id,
-            submission,
-        });
+        console.log('[POST] /dialog_submit - callback_id:', body.callback_id);
 
         // For boolean dialog, post detailed submission values to channel
         if (body.callback_id === 'booleancallbackid') {
@@ -416,7 +408,7 @@ function onDialogSubmit(req, res) {
                 boolean_default_false: submission.boolean_default_false,
             };
 
-            console.log('📝 Boolean dialog submission:', booleanValues);
+            console.log('Boolean dialog submitted');
 
             // Post structured submission results to channel for e2e verification
             message = `Boolean Dialog Submitted:
@@ -434,7 +426,7 @@ function onDialogSubmit(req, res) {
                 textarea_field: submission.textarea_field,
             };
 
-            console.log('📝 Text fields dialog submission:', textValues);
+            console.log('Text fields dialog submitted');
 
             // Post structured submission results to channel for e2e verification
             message = `Text Fields Dialog Submitted:
@@ -452,7 +444,7 @@ function onDialogSubmit(req, res) {
                 somechannelselector: submission.somechannelselector,
             };
 
-            console.log('📝 Select fields dialog submission:', selectValues);
+            console.log('Select fields dialog submitted');
 
             // Post structured submission results to channel for e2e verification
             message = `Select Fields Dialog Submitted:
@@ -557,22 +549,14 @@ function postOutgoingWebhook(req, res) {
 
 function onMultiselectDynamicDialogRequest(req, res) {
     const {body} = req;
-    console.log('=== MULTISELECT DYNAMIC DIALOG REQUEST ===');
-    console.log('Request body:', JSON.stringify(body, null, 2));
 
     if (body.trigger_id) {
         const webhookBaseUrl = getWebhookBaseUrl();
-        console.log('Webhook base URL:', webhookBaseUrl);
-
         const dialog = webhookUtils.getMultiselectDynamicDialog(body.trigger_id, webhookBaseUrl);
-        console.log('Generated dialog:', JSON.stringify(dialog, null, 2));
-
         openDialog(dialog);
-        console.log('Dialog sent to openDialog function');
     }
 
     res.setHeader('Content-Type', 'application/json');
-    console.log('=== END MULTISELECT DYNAMIC DIALOG REQUEST ===');
     return res.json({text: 'Multiselect dynamic dialog triggered via slash command!'});
 }
 
@@ -580,27 +564,154 @@ function getDynamicOptions(req, res) {
     const {body} = req;
     const searchTerm = body.user_input || '';
 
-    // Add a small delay to simulate real API call
-    setTimeout(() => {
-        const response = webhookUtils.getDynamicOptionsResponse(searchTerm);
-        res.status(200).json(response);
-    }, 200);
+    // Respond immediately for test performance
+    const response = webhookUtils.getDynamicOptionsResponse(searchTerm);
+    res.status(200).json(response);
 }
 
 function getDynamicMultiselectOptions(req, res) {
     const {body} = req;
     const searchTerm = body.user_input || '';
 
-    // Add a small delay to simulate real API call
-    setTimeout(() => {
-        const response = webhookUtils.getDynamicMultiselectOptionsResponse(searchTerm);
-        res.status(200).json(response);
-    }, 300);
+    // Respond immediately for test performance
+    const response = webhookUtils.getDynamicMultiselectOptionsResponse(searchTerm);
+    res.status(200).json(response);
+}
+
+// Multiform dialog endpoints
+function onMultiformDialogRequest(req, res) {
+    const {body} = req;
+
+    if (body.trigger_id) {
+        const webhookBaseUrl = getWebhookBaseUrl();
+        const dialog = webhookUtils.getMultiformDialog(body.trigger_id, webhookBaseUrl, 1);
+        openDialog(dialog);
+    }
+
+    res.setHeader('Content-Type', 'application/json');
+    return res.json({text: 'Multiform dialog triggered via slash command!'});
+}
+
+function onMultiformDialogSubmit(req, res) {
+    const {body} = req;
+
+    const callbackId = body.callback_id;
+    let response;
+
+    if (callbackId === 'multiform_step_1') {
+        // Return step 2 dialog
+        const webhookBaseUrl = getWebhookBaseUrl();
+        const step2Dialog = webhookUtils.getMultiformDialog(body.trigger_id, webhookBaseUrl, 2);
+
+        response = {
+            type: 'form',
+            form: step2Dialog.dialog,
+        };
+    } else if (callbackId === 'multiform_step_2') {
+        // Return step 3 dialog
+        const webhookBaseUrl = getWebhookBaseUrl();
+        const step3Dialog = webhookUtils.getMultiformDialog(body.trigger_id, webhookBaseUrl, 3);
+
+        response = {
+            type: 'form',
+            form: step3Dialog.dialog,
+        };
+    } else if (callbackId === 'multiform_step_3') {
+        // Final submission - send success message to channel
+        const submissionText = Object.entries(body.submission).
+            map(([key, value]) => `${key}: ${value}`).
+            join('\n');
+
+        const message = `Multiform submission completed!\n\`\`\`\n${submissionText}\n\`\`\``;
+        sendSysadminResponse(message, body.channel_id);
+
+        response = {};
+    } else if (body.cancelled) {
+        // Handle cancellation
+        let stepNumber;
+        if (callbackId === 'multiform_step_1') {
+            stepNumber = 1;
+        } else if (callbackId === 'multiform_step_2') {
+            stepNumber = 2;
+        } else {
+            stepNumber = 3;
+        }
+        const message = `Multiform dialog was cancelled at step ${stepNumber}`;
+        sendSysadminResponse(message, body.channel_id);
+        response = {};
+    }
+
+    res.status(200).json(response);
+}
+
+// Field refresh dialog endpoints
+function onFieldRefreshDialogRequest(req, res) {
+    const {body} = req;
+
+    if (body.trigger_id) {
+        const webhookBaseUrl = getWebhookBaseUrl();
+
+        // Start with basic field refresh dialog (no project type selected)
+        const dialog = webhookUtils.getFieldRefreshDialog(body.trigger_id, webhookBaseUrl);
+        openDialog(dialog);
+    }
+
+    res.setHeader('Content-Type', 'application/json');
+    return res.json({text: 'Field refresh dialog triggered via slash command!'});
+}
+
+function onFieldRefreshDialogSubmit(req, res) {
+    const {body} = req;
+
+    let response;
+
+    // Check if this is a refresh request (indicated by 'type': 'refresh' or selected_field)
+    if (body.type === 'refresh' || body.submission.selected_field) {
+
+        // Get the current project type from submission
+        const projectType = body.submission.project_type;
+
+        if (projectType && projectType !== 'unknown_type') {
+            // Return refreshed dialog with project-specific fields
+            const webhookBaseUrl = getWebhookBaseUrl();
+            const refreshedDialog = webhookUtils.getFieldRefreshDialog(body.trigger_id, webhookBaseUrl, projectType);
+
+            response = {
+                type: 'form',
+                form: refreshedDialog.dialog,
+            };
+        } else {
+            // Invalid project type - return error or basic dialog
+            const webhookBaseUrl = getWebhookBaseUrl();
+            const basicDialog = webhookUtils.getFieldRefreshDialog(body.trigger_id, webhookBaseUrl);
+
+            response = {
+                type: 'form',
+                form: basicDialog.dialog,
+            };
+        }
+    } else if (body.cancelled) {
+        // Handle cancellation
+        const message = 'Field refresh dialog was cancelled';
+        sendSysadminResponse(message, body.channel_id);
+        response = {};
+    } else {
+        // Final submission - send success message to channel
+        const submissionText = Object.entries(body.submission).
+            map(([key, value]) => `${key}: ${value}`).
+            join('\n');
+
+        const message = `Field refresh dialog submitted successfully!\n\`\`\`\n${submissionText}\n\`\`\``;
+        sendSysadminResponse(message, body.channel_id);
+
+        response = {};
+    }
+
+    res.status(200).json(response);
 }
 
 // Catch-all route for unmatched requests
 server.use((req, res) => {
-
     res.status(404).json({
         error: 'Not Found',
         method: req.method,
