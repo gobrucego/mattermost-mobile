@@ -10,7 +10,6 @@ import {of as of$} from 'rxjs';
 import {switchMap} from 'rxjs/operators';
 
 import {Preferences} from '@constants';
-import {CUSTOM_STATUS_TIME_PICKER_INTERVALS_IN_MINUTES} from '@constants/custom_status';
 import {getDisplayNamePreferenceAsBool} from '@helpers/api/preference';
 import {queryDisplayNamePreferences} from '@queries/servers/preference';
 import {getCurrentMomentForTimezone, getRoundedTime} from '@utils/helpers';
@@ -19,7 +18,7 @@ import {makeStyleSheetFromTheme} from '@utils/theme';
 import type {WithDatabaseArgs} from '@typings/database/database';
 
 type Props = {
-    timezone: string | null;
+    timezone: string;
     isMilitaryTime: boolean;
     theme: Theme;
     handleChange: (currentDate: Moment) => void;
@@ -27,6 +26,7 @@ type Props = {
     initialDate?: Moment;
     dateOnly?: boolean;
     testID?: string;
+    minuteInterval?: 5 | 30;
 }
 
 type AndroidMode = 'date' | 'time';
@@ -46,10 +46,20 @@ const getStyleSheet = makeStyleSheetFromTheme((theme: Theme) => {
     };
 });
 
-const DateTimeSelector = ({timezone, handleChange, isMilitaryTime, theme, showInitially, initialDate, dateOnly = false, testID}: Props) => {
+const DateTimeSelector = ({
+    timezone,
+    handleChange,
+    isMilitaryTime,
+    theme,
+    showInitially,
+    initialDate,
+    dateOnly = false, 
+    testID,
+    minuteInterval = 30,
+}: Props) => {
     const styles = getStyleSheet(theme);
     const currentTime = getCurrentMomentForTimezone(timezone);
-    const minimumDate = getRoundedTime(currentTime);
+    const minimumDate = getRoundedTime(currentTime, minuteInterval);
 
     const defaultDate = initialDate && initialDate.isAfter(minimumDate) ? initialDate : minimumDate;
     const [date, setDate] = useState<Moment>(defaultDate);
