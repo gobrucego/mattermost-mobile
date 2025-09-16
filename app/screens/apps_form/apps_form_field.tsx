@@ -356,7 +356,7 @@ const AppsFormField = React.memo<Props>(({
                     </View>
 
                     <DateTimeSelector
-                        timezone={null}
+                        timezone={'UTC'}
                         theme={theme}
                         handleChange={handleDateChange}
                         initialDate={selectedDate}
