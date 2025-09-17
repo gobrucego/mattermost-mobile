@@ -267,9 +267,9 @@ describe('DialogRouter', () => {
             );
 
             const performLookupCall = mockAppsFormComponent.mock.calls[0][0].performLookupCall;
-            const mockField = {name: 'test_field'} as AppField;
-            const mockValues = {} as AppFormValues;
-            const mockUserInput = 'test' as AppFormValue;
+            const mockField = {name: 'test_field', type: 'text'};
+            const mockValues = {};
+            const mockUserInput = 'test';
             const result = await performLookupCall(mockField, mockValues, mockUserInput);
 
             expect(result).toEqual({
